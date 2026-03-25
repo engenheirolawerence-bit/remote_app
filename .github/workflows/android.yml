@@ -1,31 +1,37 @@
 name: Build NEXUS APK
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Permite correr o build manualmente se quiseres
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get Date
         id: get-date
         run: |
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - name: Cache Buildozer Data
-        uses: actions/cache@v3
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+      # Instala as dependências necessárias do sistema
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-gstreamer-lite-1.0-0 xclip xsel libjpeg-dev
 
+      # Usa a ação oficial do Kivy para Buildozer
       - name: Build with Buildozer
-        uses: ArtemSBulat/buildozer-action@v1.2
+        uses: kivy/buildozer-action@v1
         with:
-          command: buildozer android debug
+          save_buildozer_cache: true
           buildozer_version: master
+          command: buildozer android debug
 
+      # Versão v4 (obrigatória agora no GitHub)
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: NEXUS-Remote-v21-${{ steps.get-date.outputs.date }}
           path: bin/*.apk
